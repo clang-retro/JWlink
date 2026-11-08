@@ -182,6 +182,8 @@ static void AutoGroupSect( section *sec )
     size = 0;
     num_segs = 0;
     packstart = NULL;
+    lastseg = FALSE;    /* jwlink: was used before it was set */
+    limit = 0;
     seg = NULL;
     DEBUG((DBG_OLD,"AutoGroupSect() enter" ));
     while( (seg = GetNextSeg( sec, seg )) != NULL ) {

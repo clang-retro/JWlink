@@ -842,6 +842,13 @@ static orl_return ProcSymbol( orl_symbol_handle symhdl )
             } else if( snode != NULL && snode->entry != NULL
                                      && snode->entry->iscdat ) {
                 DefineComdatSym( snode, sym, value );
+            } else if( binding == ORL_SYM_BINDING_WEAK
+                       && (sym->info & SYM_DEFINED) ) {
+                /* jwlink: a weak ELF definition gives way to one already
+                 * seen. C++ puts inline functions, templates and vtables
+                 * in every object that uses them, as weak symbols; the
+                 * first definition is used. */
+                DEBUG((DBG_OLD, "objorl.ProcSymbol(%s): weak, already defined", name ));
             } else {
 				DEBUG((DBG_OLD, "objorl.ProcSymbol(%s info=%h): calling DefineSymbol", name, sym->info ));
                 sym->info |= SYM_DEFINED;
