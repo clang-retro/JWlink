@@ -753,7 +753,13 @@ char *GetARName( ar_header *header, file_list *list )
     if( header->name[0] == '/' ) {
         size = GetARValue( &header->name[1], AR_NAME_LEN - 1 );
         buf = list->strtab + size;
-        len = strlen( buf );
+        /* jwlink: a GNU long name ends with "/\n", and the table has no
+         * NUL at its end */
+        for( len = 0; buf[len] != '\n' && buf[len] != '\0'; len++ ) {
+            if( buf[len] == '/' && buf[len + 1] == '\n' ) {
+                break;
+            }
+        }
     } else {
         buf = memchr( header->name, '/', AR_NAME_LEN );
         if( buf == NULL ) {

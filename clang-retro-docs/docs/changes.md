@@ -35,6 +35,10 @@
 - Calls to imported functions drop the `-4` that ELF keeps in the field,
   which the LX loader already accounts for, and only the DLLs that
   imports come from go in the module table.
+- A weak ELF definition gives way to one already seen, without a
+  "redefinition" error. C++ puts inline functions, template instances and
+  vtables in every object that uses them as weak symbols; the first
+  definition is used.
 
 ## Hosts
 
@@ -43,4 +47,8 @@
 - The whole command line is read on Unix, not just its first 1024 bytes.
 - An absolute weak default (a null far pointer in the far-code models)
   no longer crashes `option eliminate`.
+- GNU archives' long member names (`name/` in the `//` table) are read
+  without running past the end of the table.
+- The automatic grouping of segments no longer reads a flag before it is
+  set.
 - `GccUnix.mak` builds a Windows `jwlink.exe` with the MinGW-w64 GCC.
