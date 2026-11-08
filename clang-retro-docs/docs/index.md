@@ -34,7 +34,7 @@ Pass your own directives with `-Wl,`, such as
     Linux and Windows builds, and the CI that tests each change with the
     whole toolchain.
 
--   :material-view-grid-outline: **[All clang-retro projects](https://clang-retro.github.io/dos-sdk/projects/)**
+-   :material-view-grid-outline: **[All clang-retro projects](https://clang-retro.github.io/)**
 
     ---
 
