@@ -1,0 +1,9 @@
+# The API reference of the documentation site (api/), run by .docs/hooks.py
+# from the repository's root after `mkdocs build`.
+@INCLUDE               = clang-retro-docs/.docs/Doxyfile.base
+PROJECT_NAME           = "clang-retro JWlink"
+PROJECT_BRIEF          = "The linker's source"
+INPUT                  = c \
+                         h
+FILE_PATTERNS          = *.c *.h
+OPTIMIZE_OUTPUT_FOR_C  = YES
