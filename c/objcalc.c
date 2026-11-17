@@ -29,6 +29,7 @@
 ****************************************************************************/
 
 
+#include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -1200,6 +1201,48 @@ static void SetReadOnly( void *_seg )
     }
 }
 
+int VxDSegKind( const char *name )
+/*********************************/
+/* jwlink: the kind of a VxD segment from its name, as Microsoft's DDK
+ * names them: 'I' for init code or data (_ITEXT, _IDATA), 'P' for
+ * pageable (_PTEXT, _PDATA), 0 for the rest, which is locked. A '$' and
+ * what follows it are left out. */
+{
+    size_t      len;
+
+    if( name == NULL || name[0] != '_' )
+        return( 0 );
+    len = strcspn( name, "$" );
+    if( len != 6 )
+        return( 0 );
+    if( memicmp( name + 2, "TEXT", 4 ) != 0
+        && memicmp( name + 2, "DATA", 4 ) != 0 )
+        return( 0 );
+    switch( toupper( (unsigned char)name[1] ) ) {
+    case 'I':
+        return( 'I' );
+    case 'P':
+        return( 'P' );
+    }
+    return( 0 );
+}
+
+static void SetVxDKindFlags( void *_seg )
+/***************************************/
+{
+    seg_leader  *seg = _seg;
+
+    switch( VxDSegKind( seg->segname ) ) {
+    case 'I':
+        seg->segflags &= ~SEG_PRELOAD;
+        seg->segflags |= SEG_DISCARD;
+        break;
+    case 'P':
+        seg->segflags &= ~(SEG_PRELOAD | SEG_DISCARD);
+        break;
+    }
+}
+
 void SetSegFlags( seg_flags *flag_list )
 /**********************************************/
 {
@@ -1226,6 +1269,13 @@ void SetSegFlags( seg_flags *flag_list )
         if( flag_list->type == SEGFLAG_CLASS ) {
             DEBUG(( DBG_OLD, "SetSegFlags(): CLASS flag" ));
             FillClassFlags( flag_list->name, flag_list->flags );
+        }
+    }
+    // jwlink: a VxD's init and pageable code and data go in objects of
+    // their own, which the loader knows by their flags.
+    if( FmtData.type & MK_WIN_VXD ) {
+        for( class = Root->classlist; class != NULL; class = class->next_class ) {
+            RingWalk( class->segs, SetVxDKindFlags );
         }
     }
     // now process individual segments   
