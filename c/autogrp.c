@@ -58,10 +58,46 @@ static void             AutoGroupSect( section * );
 static group_entry      *CurrGroup;
 int                     NumGroups;
 
+static void SortVxDKinds( void )
+/******************************/
+/* jwlink: in a VxD, put each class's locked segments first, then the init
+ * ones, then the pageable ones (VxDSegKind), keeping their order otherwise,
+ * so that segments of one kind are packed into one object: the DDK's
+ * _LTEXT goes with .text even if _ITEXT came between them. */
+{
+    static const int    kinds[] = { 0, 'I', 'P' };
+    class_entry         *class;
+    seg_leader          *seg;
+    seg_leader          *sorted;
+    seg_leader          *rest;
+    seg_leader          *others;
+    unsigned            k;
+
+    for( class = Root->classlist; class != NULL; class = class->next_class ) {
+        sorted = NULL;
+        rest = class->segs;
+        for( k = 0; k < sizeof( kinds ) / sizeof( kinds[0] ); k++ ) {
+            others = NULL;
+            while( (seg = RingPop( &rest )) != NULL ) {
+                if( VxDSegKind( seg->segname ) == kinds[k] ) {
+                    RingAppend( &sorted, seg );
+                } else {
+                    RingAppend( &others, seg );
+                }
+            }
+            rest = others;
+        }
+        class->segs = sorted;
+    }
+}
+
 void AutoGroup( void )
 /********************/
 {
     DEBUG((DBG_OLD,"AutoGroup() enter" ));
+    if( FmtData.type & MK_WIN_VXD ) {
+        SortVxDKinds();
+    }
     WalkAllSects( &AutoGroupSect );
     SortGroupList();
     FindSplitGroups();

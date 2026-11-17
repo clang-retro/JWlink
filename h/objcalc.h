@@ -62,5 +62,6 @@ extern void     StartMapSort( void );
 extern void     FinishMapSort( void );
 extern void     DoPubs( section * );
 extern void     SetSegFlags( seg_flags * );
+extern int      VxDSegKind( const char * );
 extern void     CalcSegSizes( void );
 extern void     ConvertToFrame( targ_addr *, segment, bool );

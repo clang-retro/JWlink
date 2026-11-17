@@ -59,6 +59,7 @@
 #include "loadfile.h"
 #include "objstrip.h"
 #include "toc.h"
+#include "objcalc.h"
 #include "walloca.h"
 
 static orl_handle       ORLHandle;
@@ -546,10 +547,13 @@ static void AllocSeg( void *_snode, void *dummy )
             group = GetGroup( ".pdata" );
         else if( sdata->isreadonly && ( FmtData.type & (MK_PE|MK_ELF) ) )
             group = GetGroup( ".rdata" );
+        else if( ( FmtData.type & MK_WIN_VXD ) && VxDSegKind( sname ) )
+            group = NULL;   /* its own object: see SetSegFlags */
         else
 #endif
             group = GetGroup( DataGrpName );
-        AddToGroup( group, snode->entry->u.leader );
+        if( group != NULL )
+            AddToGroup( group, snode->entry->u.leader );
     }
     if( sdata->isuninit ) {
         snode->contents = NULL;
