@@ -129,7 +129,7 @@ static char SegmentedStandardAbbrevs[] = {
     COMPUNIT_ABBREV_CODE,
     DW_TAG_compile_unit,
     DW_CHILDREN_yes,
-    DW_AT_stmt_list,    DW_FORM_ref_addr,
+    DW_AT_stmt_list,    DW_FORM_data4,  /* a section offset, as in flat */
     DW_AT_name,         DW_FORM_string,
     0,                  0,
     CU_NOLINE_ABBREV_CODE,
@@ -152,7 +152,8 @@ static char SegmentedStandardAbbrevs[] = {
     DW_AT_external,     DW_FORM_flag,
     DW_AT_segment,      DW_FORM_block1,
     DW_AT_name,         DW_FORM_string,
-    0,                  0
+    0,                  0,
+    0                   /* the end of the abbreviation set */
 };
 
 static char FlatStandardAbbrevs[] = {
