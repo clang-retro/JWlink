@@ -144,6 +144,7 @@ orl_return ElfCreateSymbolHandles( elf_sec_handle elf_sec_hnd )
     Elf32_Sym           *current_sym32;
     Elf64_Sym           *current_sym64;
     int                 st_name;
+    orl_symbol_value    st_size;
 
     num_syms = elf_sec_hnd->size / elf_sec_hnd->entsize;
     elf_sec_hnd->assoc.sym.symbols = (elf_symbol_handle) _ClientSecAlloc( elf_sec_hnd, sizeof( elf_symbol_handle_struct ) * num_syms );
@@ -159,6 +160,7 @@ orl_return ElfCreateSymbolHandles( elf_sec_handle elf_sec_hnd )
             current->value = current_sym64->st_value;
             current->info = current_sym64->st_info;
             current->shndx = current_sym64->st_shndx;
+            st_size = current_sym64->st_size;
         } else {
             current_sym32 = (Elf32_Sym *)current_sym;
             fix_sym_byte_order( elf_sec_hnd->elf_file_hnd, current_sym32 );
@@ -166,6 +168,7 @@ orl_return ElfCreateSymbolHandles( elf_sec_handle elf_sec_hnd )
             current->value = current_sym32->st_value;
             current->info = current_sym32->st_info;
             current->shndx = current_sym32->st_shndx;
+            st_size = current_sym32->st_size;
         }
         if( st_name == 0 ) {
             current->name = NULL;
@@ -210,7 +213,11 @@ orl_return ElfCreateSymbolHandles( elf_sec_handle elf_sec_hnd )
             current->type |= ORL_SYM_TYPE_ABSOLUTE;
             break;
         case SHN_COMMON:
+            /* jwlink: the st_value of an ELF common symbol is its
+             * alignment. The linker uses the value of a common symbol
+             * as its size (as in COFF and OMF), so give it st_size. */
             current->type |= ORL_SYM_TYPE_COMMON;
+            current->value = st_size;
             break;
         case SHN_UNDEF:
             current->type |= ORL_SYM_TYPE_UNDEFINED;
