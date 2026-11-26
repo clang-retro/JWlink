@@ -59,6 +59,7 @@
 #include "loadfile.h"
 #include "objstrip.h"
 #include "toc.h"
+#include "ring.h"
 #include "objcalc.h"
 #include "walloca.h"
 
@@ -737,6 +738,43 @@ static void DefineComdatSym( segnode *seg, symbol *sym, orl_symbol_value value )
     DefineComdat( sdata, sym, value, sym_type, seg->contents );
 }
 
+/* jwlink: the symbols that have a weak ELF definition. A strong
+ * definition seen later replaces the weak one. */
+static symbol   **WeakDefs;
+static unsigned WeakDefCount;
+static unsigned WeakDefMax;
+
+/* Records that SYM has a weak definition. */
+static void AddWeakDef( symbol *sym )
+{
+    symbol  **grown;
+
+    if( WeakDefCount == WeakDefMax ) {
+        WeakDefMax = WeakDefMax ? WeakDefMax * 2 : 256;
+        grown = realloc( WeakDefs, WeakDefMax * sizeof( symbol * ) );
+        if( grown == NULL ) {
+            WeakDefMax = WeakDefCount;
+            return;
+        }
+        WeakDefs = grown;
+    }
+    WeakDefs[WeakDefCount++] = sym;
+}
+
+/* Returns TRUE and forgets SYM if SYM has a weak definition. */
+static bool TakeWeakDef( symbol *sym )
+{
+    unsigned    i;
+
+    for( i = 0; i < WeakDefCount; i++ ) {
+        if( WeakDefs[i] == sym ) {
+            WeakDefs[i] = WeakDefs[--WeakDefCount];
+            return( TRUE );
+        }
+    }
+    return( FALSE );
+}
+
 static orl_return ProcSymbol( orl_symbol_handle symhdl )
 /******************************************************/
 {
@@ -855,8 +893,24 @@ static orl_return ProcSymbol( orl_symbol_handle symhdl )
                 DEBUG((DBG_OLD, "objorl.ProcSymbol(%s): weak, already defined", name ));
             } else {
 				DEBUG((DBG_OLD, "objorl.ProcSymbol(%s info=%h): calling DefineSymbol", name, sym->info ));
+                if( binding != ORL_SYM_BINDING_WEAK && (sym->info & SYM_DEFINED)
+                    && TakeWeakDef( sym ) ) {
+                    /* jwlink: a strong ELF definition replaces a weak one
+                     * seen before, as in an ELF linker. libc++abi has weak
+                     * definitions of operator new and delete, and a
+                     * program can replace them. */
+                    DEBUG((DBG_OLD, "objorl.ProcSymbol(%s): replaces a weak definition", name ));
+                    if( sym->mod != NULL ) {
+                        Ring2Prune( &sym->mod->publist, sym );
+                    }
+                    sym->addr.seg = UNDEFINED;
+                    sym->p.seg = NULL;
+                }
                 sym->info |= SYM_DEFINED;
                 DefineSymbol( sym, snode, value, 0 );
+                if( binding == ORL_SYM_BINDING_WEAK ) {
+                    AddWeakDef( sym );
+                }
             }
         }
         newnode->entry = sym;
